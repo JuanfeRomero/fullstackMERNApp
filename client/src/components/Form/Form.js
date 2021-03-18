@@ -1,29 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextField, Button, Typography, Paper } from '@material-ui/core';
 import FileBase from 'react-file-base64';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 import useStyles from './styles';
-import { createPost } from '../../actions/posts'
+import { createPost, updatePost } from '../../actions/posts';
 
-const Form = () => {
-    const [postData, setPostData] = useState({
+import PropTypes from 'prop-types';
+
+const Form = ({ currentId, setCurrentId }) => {
+    // state que crea y define los datos para el post
+    const emptyData = {
         creator: '',
         title: '',
         message: '',
         tags: '',
         selectedFile: '',
-    });
+    };
+    const [postData, setPostData] = useState(emptyData);
+    // datos para el post cuando va a ser actualizado
+    const post = useSelector((state) =>
+        currentId ? state.posts.find((p) => p._id === currentId) : null
+    );
+    // effect para mostrar la informacion en el formulario al querer actualizar algo.
+    useEffect(() => {
+        if (post) setPostData(post);
+    }, [post]);
+    // clases para dar estilo
     const classes = useStyles();
     const dispatch = useDispatch();
 
     const handleSubmit = (e) => {
-        e.preventDefault();  // previene eventos default como la actualizacion del browser
+        e.preventDefault(); // previene eventos default como la actualizacion del browser
 
-        dispatch(createPost(postData))
+        if (currentId) {
+            dispatch(updatePost(currentId, postData));
+        } else {
+            dispatch(createPost(postData));
+        }
+        clear();
     };
-
-    const clear = () => {};
+    // borrar informacion del formulario.
+    const clear = () => {
+        setCurrentId(null);
+        setPostData(emptyData);
+    };
     return (
         <Paper className={classes.paper}>
             <form
@@ -32,7 +53,7 @@ const Form = () => {
                 className={`${classes.root} ${classes.form}`}
                 onSubmit={handleSubmit}
             >
-                <Typography variant="h6">Creating a Memory</Typography>
+                <Typography variant="h6">{currentId? 'Editing':'Creating'} a Memory</Typography>
                 <TextField
                     name="creator"
                     variant="outlined"
@@ -82,11 +103,32 @@ const Form = () => {
                         }
                     />
                 </div>
-                <Button className={classes.buttonSubmit} variant="contained" color="primary" size="large" type="submit" fullWidth>Submit</Button>
-                <Button variant="contained" color="secondary" size="small" onClick={clear} fullWidth>Clear</Button>
+                <Button
+                    className={classes.buttonSubmit}
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    type="submit"
+                    fullWidth
+                >
+                    Submit
+                </Button>
+                <Button
+                    variant="contained"
+                    color="secondary"
+                    size="small"
+                    onClick={clear}
+                    fullWidth
+                >
+                    Clear
+                </Button>
             </form>
         </Paper>
     );
+};
+Form.propTypes = {
+    currentId: PropTypes.object,
+    setCurrentId: PropTypes.func,
 };
 
 export default Form;
